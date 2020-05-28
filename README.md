@@ -1,10 +1,6 @@
 # Alpine SQS _(alpine-sqs)_
 
-![banner](https://raw.githubusercontent.com/roribio/alpine-sqs/master/banner.png)
-
-[![](https://images.microbadger.com/badges/image/roribio16/alpine-sqs.svg)](https://microbadger.com/images/roribio16/alpine-sqs "Get your own image badge on microbadger.com") [![](https://images.microbadger.com/badges/version/roribio16/alpine-sqs.svg)](https://microbadger.com/images/roribio16/alpine-sqs "Get your own version badge on microbadger.com") [![Docker Pulls](https://img.shields.io/docker/stars/roribio16/alpine-sqs.svg)](https://hub.docker.com/r/roribio16/alpine-sqs/) [![Docker Pulls](https://img.shields.io/docker/pulls/roribio16/alpine-sqs.svg)](https://hub.docker.com/r/roribio16/alpine-sqs/) [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-
-> Dockerized ElasticMQ server + web UI over Alpine Linux for local development.
+> Dockerized ElasticMQ server over Alpine Linux for local development.
 
 Alpine SQS provides a containerized Java implementation of the Amazon Simple Queue Service (AWS-SQS). It is based on ElasticMQ running Alpine Linux and the OpenJDK Java 8 JRE. It is compatible with AWS's API, CLI as well as the Amazon Java SDK. This allows for quicker local development without having to incurr in infrastructure costs.
 
@@ -30,7 +26,6 @@ Using his work as inspiration I decided to improve upon it by implementing the f
 
 - Reduce the Docker image foot-print as much as possible.
 - Automatically update to the latest ElasticMQ server.
-- Integrated UI for message-queue visualization.
 - Automatic tests & builds (work in progress).
 - Thorough documentation.
 
@@ -38,24 +33,20 @@ Using his work as inspiration I decided to improve upon it by implementing the f
 For more information on the different projects this work is based on, please visit:
 
 - [ElasticMQ](https://github.com/softwaremill/elasticmq).
-- [sqs-insight](https://github.com/kobim/sqs-insight) fork by [kobim](https://github.com/kobim/). Fork of [finanzcheck's now-archived sqs-insight](https://github.com/finanzcheck/sqs-insight).
 
 ## Install
 ### Pre-requisites
 
-To be able to use this environment, please make sure you have installed the latest version of [Docker](https://docs.docker.com/engine/installation/). 
+To be able to use this environment, please make sure you have installed the latest version of [Docker](https://docs.docker.com/engine/installation/).
 
 If you intend to build the environment yourself, it is recommended that you also install the latest version of [Docker Compose](https://docs.docker.com/compose/install/).
 
 ### Installation methods
 You can obtain the environment in two ways; The easiest is to pull the image directly from Docker Hub. Also, you may clone this repository and build/run it using Docker Compose.
-#### 1. Pulling from Docker Hub
-```
-docker pull roribio16/alpine-sqs
-```
+
 #### 2. Building from scratch
 ```
-git clone https://github.com/roribio/alpine-sqs.git
+git clone https://github.com/FizzyGalacticus/alpine-sqs
 ```
 ## Usage
 ### Running the environment
@@ -76,7 +67,7 @@ Providing for sake of example that in your host machine directory `/opt/alpine-s
 docker run --name alpine-sqs -p 9324:9324 -p 9325:9325 -v /opt/alpine-sqs:/opt/custom -d roribio16/alpine-sqs:latest
 ```
 
-For any configuration file not explicitly included in the container's `/opt/custom` directory, `alpine-sqs` will fall back to using the default configuration files listed [here](https://github.com/roribio/alpine-sqs/tree/master/opt).
+For any configuration file not explicitly included in the container's `/opt/custom` directory, `alpine-sqs` will fall back to using the default configuration files listed [here](https://github.com/FizzyGalacticus/alpine-sqs/tree/master/opt).
 
 #### 2. `docker-compose up` method
 If you've cloned the repository you can still take advantage of the image present in Docker Hub by running the container from the default `docker-compose.yml` file. This will pull the pre-built image from the public registry and run it with the same values stated in the previous method.
@@ -100,21 +91,20 @@ docker-compose -f docker-compose.build up -d --build
 ElasticMQ provides an Amazon-SQS compatible interface. This means you may use the AWS command-line tool, API calls and the Java SDK, to interact with local queues the same as if interacting with the actual SQS.
 
 #### Default queue
-The default configuration provisions ElasticMQ with a initial queue of the same name at run time. This allows you to start pushing messages to the queue without further configuration. 
+The default configuration provisions ElasticMQ with a initial queue of the same name at run time. This allows you to start pushing messages to the queue without further configuration.
 
 To make use of this queue, point your client to: `http://localhost:9324/queue/default`.
 
 #### Sending a message
-To send messages to a queue you need to specify the new endpoint url and queue url along with the message payload. The following example uses the AWS CLI to send a message to the `default` queue. 
+To send messages to a queue you need to specify the new endpoint url and queue url along with the message payload. The following example uses the AWS CLI to send a message to the `default` queue.
 
 ```
 aws --endpoint-url http://localhost:9324 sqs send-message --queue-url http://localhost:9324/queue/default --message-body "Hello, queue!"
 ```
 
 #### Viewing messages
-To view messages, navigate to the web UI ([sqs-insight](https://github.com/finanzcheck/sqs-insight)) by pointing your web browser to `http://localhost:9325`.
 
-You can also poll for messages from the command-line like so:
+You can poll for messages from the command-line like so:
 
 ```
 aws --endpoint-url http://localhost:9324 sqs receive-message --queue-url http://localhost:9324/queue/default --wait-time-seconds 10
@@ -148,50 +138,18 @@ queues {
 
 > **Note**: The configuration directory location inside the container is located at `/opt/config`. If you mounted that volume onto your host, you can also find the configuration files there.
 
-After editing the `elasticmq.conf` file, you need to restart the ElasticMQ server by running the `supervisorctl restart elasticmq` command inside the container. If you're editing the configuration file outside of the container, use this command: 
+After editing the `elasticmq.conf` file, you need to restart the ElasticMQ server by running the `supervisorctl restart elasticmq` command inside the container. If you're editing the configuration file outside of the container, use this command:
 
 ```
 docker exec -it alpine-sqs sh -c "supervisorctl restart elasticmq"
-``` 
-
-#### Registering new queues with the UI
-To be able to visualize newly created queues, you need to edit the `sqs-insight.conf` file to register the new queue with the UI server. Edits to this file are automatically detected by the server and does not require a restart.
-
-Configure a new endpoint like this:
-
 ```
-"endpoints": [
-        {
-           "key": "notValidKey",
-           "secretKey": "notValidSecret",
-           "region": "eu-central-1",
-           "url": "http://localhost:9324/queue/default"
-        },
-        {
-           "key": "notValidKey",
-           "secretKey": "notValidSecret",
-           "region": "eu-central-1",
-           "url": "http://localhost:9324/queue/newqueue"
-        }
-    ]
-
-```
-
-All the fields, except the `url` field, are required by `sqs-insight` to function but are not used when pointing it to a local queue server. This means that the values in those fields are not relevant for the UI to work correctly.
 
 > Consult the [AWS CLI Command Reference](http://docs.aws.amazon.com/cli/latest/reference/sqs/index.html#cli-aws-sqs) or the [AWS SDK for Java](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/examples-sqs-message-queues.html) guide for more examples and information.
-
-## Maintainer
-Ronald E. Oribio R. - [@roribio](https://github.com/roribio).
 
 ## Contribute
 PRs are accepted and encouraged!
 
-Please direct any questions, requests, or comments to the [Issues](https://github.com/roribio/alpine-sqs/issues) section of this project. 
-
-**Note:** If editing this Readme, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+Please direct any questions, requests, or comments to the [Issues](https://github.com/FizzyGalacticus/alpine-sqs/issues) section of this project.
 
 ## License
-Copyright 2017 Ronald E. Oribio R.
-
-This project is licensed under the GNU General Public License, version 3.0. See the [LICENSE](./LICENSE) file for details.
+TBD -- [Awaiting response from original author](https://github.com/roribio/alpine-sqs/issues/31)
